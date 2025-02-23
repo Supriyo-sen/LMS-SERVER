@@ -4,7 +4,7 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const connectDB = require("./src/config/db");
-
+const morgan = require("morgan");
 const authRoutes = require("./src/routes/authRoutes");
 const userRoutes = require("./src/routes/userRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
@@ -14,6 +14,7 @@ const chatRoutes = require("./src/routes/chatRoutes");
 
 dotenv.config();
 
+app.use(morgan("tiny"));
 app.use(express.json());
 app.use(cookieParser());
 app.use(
