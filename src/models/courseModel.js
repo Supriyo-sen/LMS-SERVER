@@ -8,7 +8,7 @@ const courseSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      required: [true, "Course image is required"],
+      required: false,
     },
     price: {
       type: Number,
