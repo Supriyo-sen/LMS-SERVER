@@ -12,40 +12,66 @@ const addCourse = async (req, res) => {
     duration,
     startDate,
     endDate,
-    teacherId,
+    liveClasses, // expecting liveClasses if provided
   } = req.body;
 
+  console.log("req.body", req.body);
+
   try {
-    if (new Date(startDate) >= new Date(endDate)) {
-      return res
-        .status(400)
-        .json({ message: "Start date must be before end date" });
-    }
+    // Validate that startDate is before endDate
+    // if (new Date(startDate) >= new Date(endDate)) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Start date must be before end date" });
+    // }
 
-    let imageUrl = null;
-    let videos = [];
-    let pdfs = [];
+    let courseImage = null;
+    let materials = [];
 
-    if (req.files) {
+    // Process uploaded files (assumes multer has provided req.files)
+    if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
-        const mimeType = file.mimetype.split("/")[0];
-
-        if (mimeType === "image") {
-          imageUrl = file.path;
-        } else if (mimeType === "video") {
-          videos.push(file.path);
-        } else if (
-          file.mimetype === "application/pdf" ||
-          file.mimetype.includes("msword")
-        ) {
-          pdfs.push(file.path);
+        // Check if the file is an image (using mimetype)
+        if (file.mimetype.startsWith("image/")) {
+          // Only use the first image as the course image
+          if (!courseImage) {
+            courseImage = file.path;
+          }
+        } else {
+          // For other files, add to materials with original name and file path
+          materials.push({
+            name: file.originalname || "Material",
+            file: file.path,
+          });
         }
       });
     }
 
+    // Ensure a course image is provided as required by the schema
+    // if (!courseImage) {
+    //   return res.status(400).json({ message: "Course image is required" });
+    // }
+
+    // Process liveClasses if provided; allow JSON string or array input
+    let liveClassesArr = [];
+    if (liveClasses) {
+      if (typeof liveClasses === "string") {
+        try {
+          liveClassesArr = JSON.parse(liveClasses);
+        } catch (error) {
+          return res
+            .status(400)
+            .json({ message: "Invalid liveClasses format" });
+        }
+      } else if (Array.isArray(liveClasses)) {
+        liveClassesArr = liveClasses;
+      }
+    }
+
+    // Create the course using the updated schema fields
     const course = await Course.create({
       name,
-      image: imageUrl,
+      image: courseImage,
       price,
       discountPrice,
       oldCoursePrice,
@@ -53,11 +79,8 @@ const addCourse = async (req, res) => {
       duration,
       startDate,
       endDate,
-      teacherId,
-      materials: {
-        pdfs,
-        videos,
-      },
+      liveClasses: liveClassesArr,
+      materials, // an array of { name, file } objects
     });
 
     res.status(201).json({ message: "Course added successfully", course });

@@ -8,7 +8,7 @@ const courseSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      required: [true, "Course image is required"],
+      required: false,
     },
     price: {
       type: Number,
@@ -61,10 +61,12 @@ const courseSchema = new mongoose.Schema(
         },
       },
     ],
-    materials: {
-      pdfs: [{ name: { type: String }, file: { type: String } }],
-      videos: [{ name: { type: String }, file: { type: String } }],
-    },
+    materials: [
+      {
+        name: { type: String, required: true },
+        file: { type: String, required: true },
+      },
+    ],
     courseState: {
       type: String,
       enum: ["upcoming", "running", "completed"],

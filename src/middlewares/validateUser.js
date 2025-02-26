@@ -137,8 +137,37 @@ const validateAddCourseInput = (req, res, next) => {
       .json({ message: "Course name must be at least 3 characters long" });
   }
 
-  if (!image) {
-    return res.status(400).json({ message: "Course image is required" });
+  if (!image || typeof image !== "object") {
+    return res
+      .status(400)
+      .json({ message: "Course image is required and must be a valid object" });
+  } else {
+    const { name, size, type } = image;
+
+    // Ensure the image has name, size, and type properties
+    if (!name || !size || !type) {
+      return res.status(400).json({
+        message: "Course image must have a valid name, size, and type",
+      });
+    }
+
+    // Allowed image types
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg"];
+
+    // Validate image type
+    if (!allowedImageTypes.includes(type)) {
+      return res.status(400).json({
+        message: `Invalid image format: ${type}. Allowed formats: JPEG, PNG, JPG`,
+      });
+    }
+
+    // Validate image size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (size > maxSize) {
+      return res.status(400).json({
+        message: `Image size exceeds 5MB limit: ${name}`,
+      });
+    }
   }
 
   if (!price || isNaN(price) || price <= 0) {
@@ -241,46 +270,65 @@ const validateAddCourseInput = (req, res, next) => {
   }
 
   if (materials) {
-    const { pdfs, videos } = materials;
-
-    if (pdfs && !Array.isArray(pdfs)) {
+    if (!Array.isArray(materials)) {
       return res
         .status(400)
-        .json({ message: "Materials PDFs must be an array of objects" });
+        .json({ message: "Materials must be an array of objects" });
     }
-    if (pdfs) {
-      for (const pdf of pdfs) {
-        if (!pdf.name || pdf.name.length < 3) {
-          return res.status(400).json({
-            message: "Each PDF must have a valid name of at least 3 characters",
-          });
-        }
-        if (!pdf.file || !pdf.file.startsWith("http")) {
-          return res
-            .status(400)
-            .json({ message: "Each PDF must have a valid file URL" });
-        }
+
+    for (const material of materials) {
+      // Validate name
+      if (!material.name || material.name.length < 3) {
+        return res.status(400).json({
+          message:
+            "Each material must have a valid name of at least 3 characters",
+        });
       }
-    }
 
-    if (videos && !Array.isArray(videos)) {
-      return res
-        .status(400)
-        .json({ message: "Materials videos must be an array of objects" });
-    }
-    if (videos) {
-      for (const video of videos) {
-        if (!video.name || video.name.length < 3) {
-          return res.status(400).json({
-            message:
-              "Each video must have a valid name of at least 3 characters",
-          });
-        }
-        if (!video.file || !video.file.startsWith("http")) {
-          return res
-            .status(400)
-            .json({ message: "Each video must have a valid file URL" });
-        }
+      // Validate file object
+      if (!material.file || typeof material.file !== "object") {
+        return res.status(400).json({
+          message: "Each material must contain a valid file object",
+        });
+      }
+
+      const { name, size, type } = material.file;
+
+      // Ensure file has name, size, and type
+      if (!name || !size || !type) {
+        return res.status(400).json({
+          message: "Each material file must have a valid name, size, and type",
+        });
+      }
+
+      // Allowed file types
+      const allowedFileTypes = {
+        pdf: ["application/pdf"],
+        doc: [
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+        image: ["image/jpeg", "image/png", "image/jpg"],
+        video: ["video/mp4", "video/mov", "video/avi"],
+      };
+
+      // Check if file type is valid
+      const isValidFileType = Object.values(allowedFileTypes).some((types) =>
+        types.includes(type)
+      );
+
+      if (!isValidFileType) {
+        return res.status(400).json({
+          message: `Invalid file type: ${type}. Allowed types: PDF, DOC, Image (JPG, PNG), Video (MP4, MOV, AVI)`,
+        });
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (size > maxSize) {
+        return res.status(400).json({
+          message: `File size exceeds 5MB limit: ${name}`,
+        });
       }
     }
   }
