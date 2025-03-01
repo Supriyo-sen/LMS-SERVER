@@ -16,7 +16,16 @@ const {
 const router = express.Router();
 
 // Admin-only routes add course get all courses update course delete course
-router.post("/", protect, isAdmin, upload.array("files", 10), addCourse);
+router.post(
+  "/",
+  protect,
+  isAdmin,
+  upload.fields([
+    { name: "courseImage", maxCount: 1 },
+    { name: "materials", maxCount: 10 },
+  ]),
+  addCourse
+);
 router.get("/", protect, isAdmin, getAllCourses);
 router.put(
   "/:id",
